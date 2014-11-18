@@ -47,13 +47,18 @@ clock_t start;
 
 int hs = 0, negative = 5;
 const int table_size = 1e8;
-int *table;
+// table is 100M array, storing a integer-to-wid mapping, which integer is accessed as a random number.
+int *table;  
 
 void InitUnigramTable() {
   int a, i;
   long long train_words_pow = 0;
   real d1, power = 0.75;
   table = (int *)malloc(table_size * sizeof(int));
+  // The chance of a word i being selected is count_i^(3/4) / sum_j{count_j^(3/4)}
+  // Here we take the sum. Then we iteratively place unigrams on the table. The number
+  // of appearances of each unigram depends on its proportion of count_i^(3/4) among
+  // those of all words.
   for (a = 0; a < vocab_size; a++) train_words_pow += pow(vocab[a].cn, power);
   i = 0;
   d1 = pow(vocab[i].cn, power) / (real)train_words_pow;
