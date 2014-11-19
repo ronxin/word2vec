@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+// Prints out the distance between input vector and output vectors for a given word.
+
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -24,15 +26,17 @@ const long long max_w = 50;              // max length of vocabulary entries
 int main(int argc, char **argv) {
   FILE *f;
   char st1[max_size];
-  char bestw[N][max_size];
+  char *bestw[N];
   char file_name[max_size], st[100][max_size];
   float dist, len, bestd[N], vec[max_size];
+  // size is the size of the hidden layer
   long long words, size, a, b, c, d, cn, bi[100];
   char ch;
   float *M;
+  float *Mneg;
   char *vocab;
   if (argc < 2) {
-    printf("Usage: ./word-analogy <FILE>\nwhere FILE contains word projections in the BINARY FORMAT\n");
+    printf("Usage: ./distance-io <FILE>\nwhere FILE contains word projections in the BINARY FORMAT\n");
     return 0;
   }
   strcpy(file_name, argv[1]);
@@ -44,11 +48,19 @@ int main(int argc, char **argv) {
   fscanf(f, "%lld", &words);
   fscanf(f, "%lld", &size);
   vocab = (char *)malloc((long long)words * max_w * sizeof(char));
+  for (a = 0; a < N; a++) bestw[a] = (char *)malloc(max_size * sizeof(char));
   M = (float *)malloc((long long)words * (long long)size * sizeof(float));
   if (M == NULL) {
-    printf("Cannot allocate memory: %lld MB    %lld  %lld\n", (long long)words * size * sizeof(float) / 1048576, words, size);
+    printf("M: Cannot allocate memory: %lld MB    %lld  %lld\n", (long long)words * size * sizeof(float) / 1048576, words, size);
     return -1;
   }
+  Mneg = (float *)malloc((long long)words * (long long)size * sizeof(float));
+  if (Mneg == NULL) {
+    printf("Mneg: Cannot allocate memory: %lld MB    %lld  %lld\n", (long long)words * size * sizeof(float) / 1048576, words, size);
+    return -1;
+  }
+
+  // Read input vectors.
   for (b = 0; b < words; b++) {
     a = 0;
     while (1) {
@@ -58,16 +70,35 @@ int main(int argc, char **argv) {
     }
     vocab[b * max_w + a] = 0;
     for (a = 0; a < size; a++) fread(&M[a + b * size], sizeof(float), 1, f);
+    // Normalize to L2 norm = 1
     len = 0;
     for (a = 0; a < size; a++) len += M[a + b * size] * M[a + b * size];
     len = sqrt(len);
     for (a = 0; a < size; a++) M[a + b * size] /= len;
   }
+
+  // Read output vectors.
+  for (b = 0; b < words; b++) {
+    a = 0;
+    while (1) {
+      vocab[b * max_w + a] = fgetc(f);
+      if (feof(f) || (vocab[b * max_w + a] == ' ')) break;
+      if ((a < max_w) && (vocab[b * max_w + a] != '\n')) a++;
+    }
+    vocab[b * max_w + a] = 0;
+    for (a = 0; a < size; a++) fread(&Mneg[a + b * size], sizeof(float), 1, f);
+    // Normalize to L2 norm = 1
+    len = 0;
+    for (a = 0; a < size; a++) len += Mneg[a + b * size] * Mneg[a + b * size];
+    len = sqrt(len);
+    for (a = 0; a < size; a++) Mneg[a + b * size] /= len;
+  }
+
   fclose(f);
   while (1) {
     for (a = 0; a < N; a++) bestd[a] = 0;
     for (a = 0; a < N; a++) bestw[a][0] = 0;
-    printf("Enter three words (EXIT to break): ");
+    printf("Enter word (EXIT to break): ");
     a = 0;
     while (1) {
       st1[a] = fgetc(stdin);
@@ -94,51 +125,44 @@ int main(int argc, char **argv) {
       }
     }
     cn++;
-    if (cn < 3) {
-      printf("Only %lld words were entered.. three words are needed at the input to perform the calculation\n", cn);
-      continue;
-    }
     for (a = 0; a < cn; a++) {
       for (b = 0; b < words; b++) if (!strcmp(&vocab[b * max_w], st[a])) break;
-      if (b == words) b = 0;
+      if (b == words) b = -1;
       bi[a] = b;
       printf("\nWord: %s  Position in vocabulary: %lld\n", st[a], bi[a]);
-      if (b == 0) {
+      if (b == -1) {
         printf("Out of dictionary word!\n");
         break;
       }
+      // will only look at bi[0], which is the first token
+      printf("Only look at the first token\n");
+      break;
     }
-    if (b == 0) continue;
-    printf("\n                                              Word              Distance\n------------------------------------------------------------------------\n");
-    for (a = 0; a < size; a++) vec[a] = M[a + bi[1] * size] - M[a + bi[0] * size] + M[a + bi[2] * size];
-    len = 0;
-    for (a = 0; a < size; a++) len += vec[a] * vec[a];
-    len = sqrt(len);
-    for (a = 0; a < size; a++) vec[a] /= len;
-    for (a = 0; a < N; a++) bestd[a] = 0;
-    for (a = 0; a < N; a++) bestw[a][0] = 0;
-    for (c = 0; c < words; c++) {
-      if (c == bi[0]) continue;
-      if (c == bi[1]) continue;
-      if (c == bi[2]) continue;
-      a = 0;
-      for (b = 0; b < cn; b++) if (bi[b] == c) a = 1;
-      if (a == 1) continue;
-      dist = 0;
-      for (a = 0; a < size; a++) dist += vec[a] * M[a + c * size];
-      for (a = 0; a < N; a++) {
-        if (dist > bestd[a]) {
-          for (d = N - 1; d > a; d--) {
-            bestd[d] = bestd[d - 1];
-            strcpy(bestw[d], bestw[d - 1]);
-          }
-          bestd[a] = dist;
-          strcpy(bestw[a], &vocab[c * max_w]);
-          break;
-        }
-      }
+    if (b == -1) continue;
+
+    long long wid = bi[0];
+
+    float len1 = 0;
+    float len2 = 0;
+    float product = 0;
+    float distance = 0;
+
+    for (a = 0; a < size; ++a) {
+      float e1 = M[wid * size + a];
+      float e2 = Mneg[wid * size + a];
+      len1 += e1 * e1;
+      len2 += e2 * e2;
+      product += e1 * e2;
+      distance += (e1 - e2) * (e1 - e2);
     }
-    for (a = 0; a < N; a++) printf("%50s\t\t%f\n", bestw[a], bestd[a]);
+    len1 = sqrt(len1);
+    len2 = sqrt(len2);
+    distance = sqrt(distance);
+
+    printf("length of input vector: %f\n", len1);
+    printf("length of output vector: %f\n", len2);
+    printf("inner product: %f\n", product);
+    printf("L2 distance: %f\n", distance);
   }
   return 0;
 }

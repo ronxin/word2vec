@@ -26,3 +26,12 @@
 *.exe
 *.out
 *.app
+word2vec
+word2phrase
+distance
+distance-io
+word-analogy
+compute-accuracy
+
+#  Output
+output

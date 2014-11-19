@@ -566,8 +566,18 @@ void TrainModel() {
     fprintf(fo, "%lld %lld\n", vocab_size, layer1_size);
     for (a = 0; a < vocab_size; a++) {
       fprintf(fo, "%s ", vocab[a].word);
-      if (binary) for (b = 0; b < layer1_size; b++) fwrite(&syn0[a * layer1_size + b], sizeof(real), 1, fo);
+      if (binary) for (b = 0; b < layer1_size; b++) {
+        fwrite(&syn0[a * layer1_size + b], sizeof(real), 1, fo);
+      }
       else for (b = 0; b < layer1_size; b++) fprintf(fo, "%lf ", syn0[a * layer1_size + b]);
+      fprintf(fo, "\n");
+    }
+    if (negative > 0) for (a = 0; a < vocab_size; a++) {
+      fprintf(fo, "%s ", vocab[a].word);
+      if (binary) for (b = 0; b < layer1_size; b++) {
+        fwrite(&syn1neg[a * layer1_size + b], sizeof(real), 1, fo);
+      }
+      else for (b = 0; b < layer1_size; b++) fprintf(fo, "%lf ", syn1neg[a * layer1_size + b]);
       fprintf(fo, "\n");
     }
   } else {
