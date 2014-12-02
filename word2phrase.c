@@ -155,6 +155,7 @@ void ReduceVocab() {
   min_reduce++;
 }
 
+// XR: make vocab of unigrams and bigrams
 void LearnVocabFromTrainFile() {
   char word[MAX_STRING], last_word[MAX_STRING], bigram_word[MAX_STRING * 2];
   FILE *fin;
@@ -203,12 +204,19 @@ void LearnVocabFromTrainFile() {
   fclose(fin);
 }
 
+// Concatenate words from corpus following a left-to-right greedy way.
+// Generate unigrams and bigrams only.
+// According to Tomas Mikolov, "The easiest way how to obtain longer phrases
+// is to run word2phrase iteratively, although forming the phrases using 
+// higher-order counts might work better. The vectors are very good even 
+// if they represent phrase that contains several words, as long as you have a lot of training data.
 void TrainModel() {
   long long pa = 0, pb = 0, pab = 0, oov, i, li = -1, cn = 0;
   char word[MAX_STRING], last_word[MAX_STRING], bigram_word[MAX_STRING * 2];
   real score;
   FILE *fo, *fin;
   printf("Starting training using file %s\n", train_file);
+  // rx: unigram and bigrams only.
   LearnVocabFromTrainFile();
   fin = fopen(train_file, "rb");
   fo = fopen(output_file, "wb");
@@ -226,18 +234,18 @@ void TrainModel() {
       printf("Words written: %lldK%c", cn / 1000, 13);
       fflush(stdout);
     }
-    oov = 0;
+    oov = 0;  // oov is whether this bigram should be output as bigram
     i = SearchVocab(word);
     if (i == -1) oov = 1; else pb = vocab[i].cn;
-    if (li == -1) oov = 1;
+    if (li == -1) oov = 1;  // "li" is the index of the last word
     li = i;
     sprintf(bigram_word, "%s_%s", last_word, word);
     bigram_word[MAX_STRING - 1] = 0;
     i = SearchVocab(bigram_word);
     if (i == -1) oov = 1; else pab = vocab[i].cn;
-    if (pa < min_count) oov = 1;
-    if (pb < min_count) oov = 1;
-    if (oov) score = 0; else score = (pab - min_count) / (real)pa / (real)pb * (real)train_words;
+    if (pa < min_count) oov = 1;  // pa is the frequency of the previous word
+    if (pb < min_count) oov = 1;  // pb is the frequency of the current word
+    if (oov) score = 0; else score = (pab - min_count) / (real)pa / (real)pb * (real)train_words;  // PMI
     if (score > threshold) {
       fprintf(fo, "_%s", word);
       pb = 0;
