@@ -40,6 +40,7 @@ struct vocab_word *vocab;
 int binary = 0, cbow = 1, debug_mode = 2, window = 5, min_count = 5, num_threads = 12, min_reduce = 1;
 int *vocab_hash;
 long long vocab_max_size = 1000, vocab_size = 0, layer1_size = 100;
+// train_words: number of training instances, which is the sum of frequencies of words in the vocabulary.
 long long train_words = 0, word_count_actual = 0, iter = 5, file_size = 0, classes = 0;
 real alpha = 0.025, starting_alpha, sample = 1e-3;
 real *syn0, *syn1, *syn1neg, *expTable;
@@ -301,10 +302,13 @@ void LearnVocabFromTrainFile() {
 }
 
 void SaveVocab() {
+  printf("Saving vocab.\n");
   long long i;
+  printf("saving to '%s'\n", save_vocab_file);
   FILE *fo = fopen(save_vocab_file, "wb");
   for (i = 0; i < vocab_size; i++) fprintf(fo, "%s %lld\n", vocab[i].word, vocab[i].cn);
   fclose(fo);
+  printf("Finished saving vocab.\n");
 }
 
 void ReadVocab() {
@@ -553,6 +557,7 @@ void TrainModel() {
   printf("Starting training using file %s\n", train_file);
   starting_alpha = alpha;
   if (read_vocab_file[0] != 0) ReadVocab(); else LearnVocabFromTrainFile();
+  printf("save_vocab_file = '%s'\n", save_vocab_file);
   if (save_vocab_file[0] != 0) SaveVocab();
   if (output_file[0] == 0) return;
   InitNet();
@@ -713,5 +718,6 @@ int main(int argc, char **argv) {
     expTable[i] = expTable[i] / (expTable[i] + 1);                   // Precompute f(x) = x / (x + 1)
   }
   TrainModel();
+  printf("\n");
   return 0;
 }
