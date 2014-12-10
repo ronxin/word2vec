@@ -1,14 +1,22 @@
 """Reads in the text-format vectors, takes in a three-word query, and use 2 different methods to solve analogy. Prints out detailed information."""
+# NOTE: the vectors output by word2vec are normalized yet. distance.c normalizes it. So here I should normalize it by hand, too.
 # Usage: $0 vectors.txt
  
 import sys
-from zope.interface.tests.advisory_testing import ping
+import math
 
 k = 0  # number of dimension
 V = 0  # size of vocabulary
 vec = {}
 
 print 'Reading input...'
+
+def vec_len(a):
+  return math.sqrt(sum([x*x for x in a]))
+
+def normalize(a):
+  vlen = vec_len(a)
+  return [x/vlen for x in a]
 
 with open(sys.argv[1], 'r') as fin:
   first_line = True
@@ -28,6 +36,7 @@ with open(sys.argv[1], 'r') as fin:
       continue
     assert not word in vec
     new_vec = [float(x) for x in fs[1:]]
+    new_vec = normalize(new_vec)
     assert len(new_vec) == k
     vec[word] = new_vec
     if V == len(vec):
@@ -86,6 +95,10 @@ while True:
     three_cos_mult = 1.0
     for i, w in enumerate(words):
       pin = pos_inner(vec[word], vec[w])  # positive inner product
+      # debug
+      if pin > 1:
+        print word, inner(vec[word], vec[word]), w, inner(vec[w], vec[w])
+        sys.exit()
       new_cand.append(pin)
       if i == 1:
         three_cos -= pin
