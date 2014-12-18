@@ -32,6 +32,8 @@ distance
 distance-io
 word-analogy
 compute-accuracy
+binvec2txt
+txtvec2bin
 
 #  Output
 output
