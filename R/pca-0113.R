@@ -11,7 +11,7 @@ normalize_vectors <- function(d) {
 for (i in 0:10) {
   filename <- paste(input_prefix, i, sep='')
   dat <- read.table(filename, sep="\t", row.names=1)
-  dat <- normalize_vectors(dat)
+  # dat <- normalize_vectors(dat)
   pca <- prcomp(dat)
   pngname <- paste(output_prefix, i, '.png', sep='')
   png(pngname)
