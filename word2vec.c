@@ -410,7 +410,7 @@ void *TrainModelThread(void *id) {
         sentence_length++;
         if (sentence_length >= MAX_SENTENCE_LENGTH) break;
       }
-      sentence_position = 0;
+      sentence_position = 0;  // here reset sentence_position to initiate iteration below
     }
     if (feof(fi) || (word_count > train_words / num_threads)) {
       word_count_actual += word_count - last_word_count;
