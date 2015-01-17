@@ -2,15 +2,16 @@ input_prefix <- '~/word2vec/output/10w-vectors/vector-wiki-10word-20150113-csv-'
 output_prefix <- '~/word2vec/output/10w-pcas/wiki-10word-20150113-'
 
 normalize_vectors <- function(d) {
-  for (i in 1:nrow(dat)) {
-    dat[i,] <- dat[i,] / sqrt(sum(dat[i,] * dat[i,]))
-  }	
+  for (i in 1:nrow(d)) {
+    d[i,] <- d[i,] / sqrt(sum(d[i,] * d[i,]))
+  }
+  return(d)
 }
 
 for (i in 0:10) {
   filename <- paste(input_prefix, i, sep='')
   dat <- read.table(filename, sep="\t", row.names=1)
-  normalize_vectors(dat)
+  dat <- normalize_vectors(dat)
   pca <- prcomp(dat)
   pngname <- paste(output_prefix, i, '.png', sep='')
   png(pngname)
