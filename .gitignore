@@ -28,6 +28,7 @@
 *.app
 word2vec
 word2phrase
+word2phrase-so
 distance
 distance-io
 word-analogy
