@@ -381,7 +381,7 @@ void *TrainModelThread(void *id) {
       alpha = starting_alpha * (1 - word_count_actual / (real)(train_words + 1));
       if (alpha < starting_alpha * 0.0001) alpha = starting_alpha * 0.0001;
     }
-    
+
     if (sentence_length == 0) {
       // Construct the sentence with words ins sequential order until reaching MAX_SENTENCE_LENGTH.
       // So we are not looking at the actual sentence boundary.
@@ -408,7 +408,7 @@ void *TrainModelThread(void *id) {
 
     if (feof(fi)) break;
     if (word_count > train_words / num_threads) break;
-    
+
     word = sen[sentence_position];
     if (word == -1) continue;
     for (c = 0; c < layer1_size; c++) neu1[c] = 0;
@@ -510,13 +510,18 @@ void *TrainModelThread(void *id) {
             if (target == word) continue;
             label = 0;
           }
+          // offset of the current word's vector
           l2 = target * layer1_size;
+          // f is the net input, i.e., V_in.T * V'_out
           f = 0;
+          // syn1neg is the output vectors for negative sampling (syn1 is for hierarchical softmax)
           for (c = 0; c < layer1_size; c++) f += syn0[c + l1] * syn1neg[c + l2];
-          // 'g' is the gradient multiplied by the learning rate
+          // 'g' is the gradient (of error function w.r.t. the net input of
+          // the current node in the output-layer) multiplied by the learning
+          // rate.
           g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
           for (c = 0; c < layer1_size; c++) neu1e[c] += g * syn1neg[c + l2];
-          // Why do we need to update syn1neg here? How is it used subsequently?
+          // syn0 is the hidden layer value.
           for (c = 0; c < layer1_size; c++) syn1neg[c + l2] += g * syn0[c + l1];
         }
         // Learn weights input -> hidden: i.e., the word vectors
